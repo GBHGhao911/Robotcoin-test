@@ -1,0 +1,2289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>机器人操作数据集 | 多模态机器人数据集平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- 引入js-yaml库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <style>
+        /* 样式保持不变，与原始代码相同 */
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #0d47a1;
+            --secondary: #f57c00;
+            --accent: #8e24aa;
+            --dark: #202124;
+            --light: #f8f9fa;
+            --gray: #5f6368;
+            --border: #dadce0;
+            --card-bg: #ffffff;
+            --sidebar-bg: #f8f9fa;
+            --header-bg: #ffffff;
+            --footer-bg: #f8f9fa;
+            --tag-bg: #e8f0fe;
+            --tag-hover: #d2e3fc;
+            --tag-active: #1a73e8;
+            --tag-text: #1a73e8;
+            --tag-active-text: #ffffff;
+            --section-bg: #f8f9fa;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            background: #ffffff;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+        }
+        
+        header {
+            background: linear-gradient(120deg, #1a73e8, #0d47a1);
+            color: white;
+            padding: 1.2rem 0;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 2.8rem;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .logo-text {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: white;
+        }
+        
+        .logo-subtext {
+            font-size: 0.95rem;
+            opacity: 0.8;
+            margin-top: 4px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        nav a:hover, nav a.active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .search-section {
+            background: white;
+            padding: 25px 0;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .search-container {
+            display: flex;
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 50px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+        
+        .search-container:focus-within {
+            box-shadow: 0 4px 20px rgba(26, 115, 232, 0.3);
+            border-color: var(--primary);
+        }
+        
+        .search-container input {
+            flex: 1;
+            padding: 18px 25px;
+            font-size: 1.1rem;
+            border: none;
+            outline: none;
+            background: #f8f9fa;
+        }
+        
+        .search-container button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 35px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .search-container button:hover {
+            background: var(--primary-dark);
+        }
+        
+        /* 智能搜索开关样式 */
+        .smart-search-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 10px;
+            font-size: 1rem;
+            color: var(--gray);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            z-index: 1;
+            cursor: pointer;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .hero {
+            background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.95)), 
+                        url('https://images.unsplash.com/photo-1601134467661-3d775b999c8b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+            background-size: cover;
+            background-position: center;
+            color: var(--dark);
+            padding: 4rem 0;
+            text-align: center;
+            margin: 20px 0 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1.2rem;
+            letter-spacing: 0.5px;
+            font-weight: 800;
+            color: var(--dark);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            max-width: 800px;
+            margin: 0 auto 2.5rem;
+            opacity: 0.9;
+            line-height: 1.8;
+            font-weight: 400;
+            color: var(--gray);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            background: var(--primary);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .sidebar {
+            flex: 0 0 280px;
+            background: var(--sidebar-bg);
+            border-radius: 12px;
+            padding: 25px 20px;
+            height: fit-content;
+            position: sticky;
+            top: 120px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+        
+        .sidebar h2 {
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            color: var(--dark);
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .filter-section {
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+        }
+        
+        .filter-section:last-child {
+            border-bottom: none;
+        }
+        
+        .filter-header {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .filter-header .expand-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.9rem;
+            margin-left: auto;
+        }
+        
+        .filter-header .expand-icon.expanded {
+            transform: rotate(90deg);
+        }
+        
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .tag-btn {
+            background: var(--tag-bg);
+            color: var(--tag-text);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 6px 14px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .tag-btn:hover {
+            background: var(--tag-hover);
+            transform: translateY(-2px);
+        }
+        
+        .tag-btn.active {
+            background: var(--tag-active);
+            color: var(--tag-active-text);
+            border-color: var(--tag-active);
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.2);
+        }
+        
+        .tag-btn .tag-count {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-left: 4px;
+        }
+        
+        .tag-btn.active .tag-count {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .sub-tag-container {
+            padding-left: 20px;
+            margin-top: 10px;
+            border-left: 1px solid var(--border);
+            display: none; /* 默认隐藏子标签 */
+        }
+        
+        .sub-tag-container.show {
+            display: block;
+        }
+        
+        .sub-tag-container .tag-btn {
+            font-size: 0.85rem;
+            padding: 5px 12px;
+        }
+        
+        .reset-filters {
+            background: transparent;
+            color: var(--gray);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 6px;
+            width: 100%;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .reset-filters:hover {
+            background: #f0f0f0;
+        }
+        
+        .dataset-section {
+            flex: 1;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 0 20px;
+        }
+        
+        .section-header h2 {
+            font-size: 2.2rem;
+            color: var(--dark);
+            font-weight: 700;
+            margin-bottom: 20px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-header h2:after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        
+        .section-header p {
+            font-size: 1.2rem;
+            color: var(--gray);
+            max-width: 800px;
+            margin: 30px auto 0;
+            line-height: 1.8;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 25px 35px;
+            background: white;
+            border-radius: 10px;
+            min-width: 160px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 1.1rem;
+            color: var(--gray);
+            font-weight: 500;
+        }
+        
+        .dataset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .dataset-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .dataset-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            padding: 25px 25px 15px;
+            background: linear-gradient(to right, #f8f9fa, #ffffff);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .card-header h3 {
+            font-size: 1.4rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .card-content {
+            padding: 20px 25px;
+            flex-grow: 1;
+        }
+        
+        .card-content p {
+            color: #495057;
+            margin-bottom: 20px;
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+        
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .tag {
+            background: #e8f0fe;
+            color: var(--primary);
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .tag:hover {
+            background: #d2e3fc;
+            transform: translateY(-2px);
+        }
+        
+        .card-footer {
+            padding: 18px 25px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+        }
+        
+        .download-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+        }
+        
+        .download-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--gray);
+            background: var(--footer-bg);
+            margin-top: 60px;
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.03);
+        }
+        
+        .filter-status {
+            background: #e8f0fe;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .filter-status h4 {
+            font-size: 1.1rem;
+            color: var(--dark);
+            margin-right: 10px;
+        }
+        
+        .selected-tag {
+            background: var(--tag-active);
+            color: white;
+            border-radius: 16px;
+            padding: 6px 14px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .selected-tag i {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .selected-tag i:hover {
+            transform: scale(1.2);
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            grid-column: 1 / -1;
+            border: 1px dashed var(--border);
+        }
+        
+        .no-results i {
+            font-size: 3rem;
+            color: var(--gray);
+            margin-bottom: 20px;
+        }
+        
+        .no-results h3 {
+            margin-bottom: 15px;
+            color: var(--dark);
+            font-size: 1.5rem;
+        }
+        
+        .no-results p {
+            color: var(--gray);
+            font-size: 1rem;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            padding: 30px;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .data-source-info {
+            background: #e8f0fe;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .filter-mode {
+            background: #e8f0fe;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .filter-mode-label {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .mode-switch {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .mode-btn {
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: white;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .mode-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .mode-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+        }
+        
+        .ai-result-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #8e24aa, #1a73e8);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .ai-result-badge i {
+            animation: pulse 1.5s infinite;
+        }
+        
+        .ai-score {
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-left: 5px;
+        }
+        
+        .highlighted-card {
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 20px rgba(26, 115, 232, 0.4);
+            position: relative;
+        }
+        
+        .api-mock-result {
+            background: #e8f0fe;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .api-mock-result h4 {
+            margin-bottom: 10px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .api-mock-result pre {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            max-height: 200px;
+            font-size: 0.8rem;
+        }
+        
+        .api-response {
+            background: #e8f0fe;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .api-response h4 {
+            margin-bottom: 10px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .api-response pre {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            max-height: 200px;
+            font-size: 0.8rem;
+        }
+        
+        .api-config-success {
+            background: #d4edda;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            color: #155724;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .api-config-success i {
+            color: #28a745;
+            font-size: 1.2rem;
+        }
+        
+        .score-explanation {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .score-scale {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 0 10px;
+        }
+        
+        .score-level {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .score-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .score-fill {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #f44336, #ff9800, #4caf50);
+        }
+        
+        .score-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            font-weight: 500;
+        }
+        
+        .score-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        /* 分数阈值滑块 */
+        .score-threshold {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .threshold-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .threshold-label {
+            font-weight: 600;
+            color: var(--dark);
+            min-width: 100px;
+        }
+        
+        .threshold-value {
+            min-width: 40px;
+            text-align: center;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .threshold-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            outline: none;
+        }
+        
+        .threshold-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        
+        .threshold-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            background: var(--primary-dark);
+        }
+        
+        .threshold-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            border: none;
+        }
+        
+        .threshold-slider::-moz-range-thumb:hover {
+            transform: scale(1.1);
+            background: var(--primary-dark);
+        }
+        
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .page-btn {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--gray);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .page-btn:hover:not(.disabled) {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .page-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+        }
+        
+        .page-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .page-info {
+            display: flex;
+            align-items: center;
+            margin: 0 15px;
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+        
+        /* 页码输入框样式 */
+        .page-input {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            margin: 0 10px;
+        }
+        
+        .goto-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .goto-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        /* 状态提示 */
+        .status-indicator {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: static;
+            }
+            
+            .dataset-grid {
+                grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .hero p {
+                font-size: 1.1rem;
+            }
+            
+            .dataset-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .stat-item {
+                min-width: 140px;
+                padding: 20px;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
+            }
+            
+            .search-container {
+                flex-direction: column;
+                border-radius: 12px;
+            }
+            
+            .search-container input {
+                padding: 15px;
+            }
+            
+            .search-container button {
+                padding: 15px;
+                justify-content: center;
+            }
+            
+            .filter-mode {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .mode-switch {
+                width: 100%;
+            }
+            
+            .mode-btn {
+                flex: 1;
+                text-align: center;
+            }
+            
+            .ai-result-badge {
+                font-size: 0.8rem;
+                padding: 6px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <div class="logo-text">机器人操作数据集</div>
+                        <div class="logo-subtext">多模态机器人数据集平台</div>
+                    </div>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="#" class="active"><i class="fas fa-database"></i> 数据集</a></li>
+                        <li><a href="#"><i class="fas fa-file-alt"></i> 论文</a></li>
+                        <li><a href="#"><i class="fas fa-download"></i> 下载</a></li>
+                        <li><a href="#"><i class="fas fa-book"></i> 文档</a></li>
+                        <li><a href="#"><i class="fas fa-users"></i> 论坛</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+    
+    <section class="search-section">
+        <div class="container">
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="搜索数据集（例如：厨房操作、抓取、装配...）">
+                <button id="search-btn"><i class="fas fa-search"></i> 搜索</button>
+            </div>
+            
+            <!-- 智能搜索开关 -->
+            <div class="smart-search-toggle">
+                <label for="smart-search-toggle">启用智能搜索：</label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="smart-search-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </div>
+            </div>
+            
+            <div class="status-indicator" id="status-indicator">
+                <i class="fas fa-check-circle"></i>
+                <span>智能搜索功能已启用，点击搜索按钮开始使用</span>
+            </div>
+            
+            <div class="api-mock-result" id="api-mock-result" style="display: none;">
+                <h4><i class="fas fa-code"></i> DeepSeek API请求内容</h4>
+                <pre id="api-request"></pre>
+            </div>
+            <div class="api-response" id="api-response" style="display: none;">
+                <h4><i class="fas fa-server"></i> DeepSeek API响应</h4>
+                <pre id="api-response-content"></pre>
+            </div>
+            <div class="api-config-success" id="api-config-success">
+                <i class="fas fa-check-circle"></i>
+                <span>DeepSeek API已配置成功，智能搜索功能已启用！</span>
+            </div>
+            <div class="score-explanation">
+                <h4><i class="fas fa-star"></i> 匹配分数说明</h4>
+                <p>DeepSeek AI为每个匹配的数据集提供0-100的匹配分数，分数越高表示与搜索查询的相关性越强</p>
+                <div class="score-scale">
+                    <div class="score-level">
+                        <div class="score-value">0-30</div>
+                        <div class="score-label">低相关</div>
+                    </div>
+                    <div class="score-level">
+                        <div class="score-value">31-70</div>
+                        <div class="score-label">中等相关</div>
+                    </div>
+                    <div class="score-level">
+                        <div class="score-value">71-100</div>
+                        <div class="score-label">高相关</div>
+                    </div>
+                </div>
+                <div class="score-bar">
+                    <div class="score-fill"></div>
+                </div>
+                
+                <!-- 分数阈值滑块 -->
+                <div class="score-threshold">
+                    <h4><i class="fas fa-sliders-h"></i> 匹配分数阈值</h4>
+                    <p>设置显示结果的最低匹配分数，只显示分数在此阈值以上的数据集</p>
+                    <div class="threshold-control">
+                        <div class="threshold-label">分数阈值:</div>
+                        <div class="threshold-value" id="threshold-value">50</div>
+                        <input type="range" id="threshold-slider" class="threshold-slider" min="0" max="100" value="50">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <div class="container">
+        <section class="hero">
+            <h1>机器人操作多模态数据集</h1>
+            <p>一个包含视觉、声音、触觉等多种传感器数据的大型机器人操作数据集，涵盖多种场景、物品和操作任务，为机器人学习研究提供丰富资源。</p>
+            <a href="#" class="btn"><i class="fas fa-download"></i> 下载数据集</a>
+        </section>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="stat-samples">0</div>
+                <div class="stat-label">数据样本</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-items">0</div>
+                <div class="stat-label">物品类别</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-actions">0</div>
+                <div class="stat-label">原子动作</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-robots">0</div>
+                <div class="stat-label">机器人本体</div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <aside class="sidebar">
+                <h2><i class="fas fa-filter"></i> 数据集筛选</h2>
+                
+                <div class="filter-explanation">
+                    <i class="fas fa-info-circle"></i> 
+                    不同筛选类型之间始终为"与"关系(AND)，同一类型内标签根据模式组合。
+                </div>
+                
+                <div class="filter-mode">
+                    <div class="filter-mode-label">同一类型内筛选模式：</div>
+                    <div class="mode-switch">
+                        <button class="mode-btn active" id="mode-all">满足全部标签</button>
+                        <button class="mode-btn" id="mode-any">满足任一标签</button>
+                    </div>
+                </div>
+                
+                <div class="filter-status">
+                    <h4>当前筛选:</h4>
+                    <div id="selected-tags"></div>
+                </div>
+                
+                <div class="loading" id="filter-loading">
+                    <div class="loading-spinner"></div>
+                </div>
+                
+                <div id="filter-error" class="error-message" style="display: none;"></div>
+                
+                <div id="filter-sections">
+                    <!-- 动态加载的筛选区域 -->
+                </div>
+                
+                <button id="reset-filters" class="reset-filters"><i class="fas fa-redo"></i> 重置所有筛选</button>
+                
+                <div class="data-source-info">
+                    <i class="fas fa-database"></i> 数据源: dataset_info/*.yml
+                </div>
+            </aside>
+            
+            <section class="dataset-section">
+                <div class="section-header">
+                    <h2>精选数据集</h2>
+                    <p>我们的数据集包含多样化的机器人操作任务，涵盖家庭、工业和服务场景，使用多种机器人本体和传感器配置采集。</p>
+                </div>
+                
+                <!-- 分页控件 -->
+                <div class="pagination" id="pagination-controls">
+                    <button id="first-page" class="page-btn"><i class="fas fa-angle-double-left"></i></button>
+                    <button id="prev-page" class="page-btn"><i class="fas fa-chevron-left"></i></button>
+                    
+                    <div class="page-info">
+                        <span id="current-page">1</span> / <span id="total-pages">1</span>
+                    </div>
+                    
+                    <button id="next-page" class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                    <button id="last-page" class="page-btn"><i class="fas fa-angle-double-right"></i></button>
+                    
+                    <div class="goto-page">
+                        <input type="number" id="page-input" class="page-input" min="1" value="1">
+                        <button id="goto-btn" class="goto-btn">前往</button>
+                    </div>
+                </div>
+                
+                <div class="dataset-grid" id="dataset-container">
+                    <!-- 数据集卡片将在这里动态生成 -->
+                </div>
+                
+                <!-- 分页控件底部 -->
+                <div class="pagination" id="pagination-bottom">
+                    <!-- 与顶部相同的分页控件 -->
+                </div>
+            </section>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>机器人操作数据集平台 &copy; 2023 | 基于多模态机器人操作数据集 | 学术研究使用许可</p>
+            <p>本平台仅用于教育和研究目的，所有数据集版权归原所有者所有</p>
+            <div style="margin-top: 20px; display: flex; justify-content: center; gap: 20px;">
+                <a href="#" style="color: var(--gray); text-decoration: none;"><i class="fab fa-github"></i> GitHub</a>
+                <a href="#" style="color: var(--gray); text-decoration: none;"><i class="fab fa-twitter"></i> Twitter</a>
+                <a href="#" style="color: var(--gray); text-decoration: none;"><i class="fab fa-linkedin"></i> LinkedIn</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 分页相关变量
+        let currentPage = 1;
+        let itemsPerPage = 20;
+        let totalPages = 1;
+        let currentDatasets = [];
+        
+        // 预设DeepSeek API配置
+        const DEEPSEEK_API_ENDPOINT = "https://api.deepseek.com/chat/completions";
+        const DEEPSEEK_API_KEY = "sk-1f3d63217f0845aea3a6f616e4fd5694"; // 请替换为实际的API密钥
+        
+        // 数据集属性映射到筛选分类
+        const categoryMapping = {
+            "scene": "场景类型",
+            "robot": "采集本体",
+            "end": "末端类型",
+            "cameraCount": "相机数量",
+            "cameraType": "相机类型",
+            "soundSensors": "声音传感器数量",
+            "tactileSensors": "触觉传感器数量",
+            "action": "原子动作",
+            "item": "物品",
+            "tableHeight": "桌面高度",
+            "robotHeight": "机器人高度"
+        };
+
+        // 存储数据集
+        let datasets = [];
+        // 存储标签数据（动态生成）
+        let tagsData = {};
+        // 物品类别树状结构
+        let itemCategoryTree = {};
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // 分页元素
+            const firstPageBtn = document.getElementById('first-page');
+            const prevPageBtn = document.getElementById('prev-page');
+            const nextPageBtn = document.getElementById('next-page');
+            const lastPageBtn = document.getElementById('last-page');
+            const currentPageSpan = document.getElementById('current-page');
+            const totalPagesSpan = document.getElementById('total-pages');
+            const pageInput = document.getElementById('page-input');
+            const gotoBtn = document.getElementById('goto-btn');
+            
+            // 存储当前选中的筛选条件
+            const activeFilters = {};
+            // 筛选模式：true为同一类型内全部满足，false为同一类型内满足任一
+            let filterMode = true; 
+            // 防抖计时器
+            let filterDebounceTimer = null;
+            // 存储当前AI匹配结果
+            let currentAIMatches = [];
+            
+            // DOM元素
+            const resetBtn = document.getElementById('reset-filters');
+            const datasetContainer = document.getElementById('dataset-container');
+            const selectedTagsContainer = document.getElementById('selected-tags');
+            const searchInput = document.getElementById('search-input');
+            const searchBtn = document.getElementById('search-btn');
+            const filterSectionsContainer = document.getElementById('filter-sections');
+            const filterLoading = document.getElementById('filter-loading');
+            const filterError = document.getElementById('filter-error');
+            const modeAllBtn = document.getElementById('mode-all');
+            const modeAnyBtn = document.getElementById('mode-any');
+            const statusIndicator = document.getElementById('status-indicator');
+            const statSamples = document.getElementById('stat-samples');
+            const statItems = document.getElementById('stat-items');
+            const statActions = document.getElementById('stat-actions');
+            const statRobots = document.getElementById('stat-robots');
+            const apiMockResult = document.getElementById('api-mock-result');
+            const apiRequest = document.getElementById('api-request');
+            const apiResponse = document.getElementById('api-response');
+            const apiResponseContent = document.getElementById('api-response-content');
+            const apiConfigSuccess = document.getElementById('api-config-success');
+            const thresholdSlider = document.getElementById('threshold-slider');
+            const thresholdValue = document.getElementById('threshold-value');
+            const smartSearchToggle = document.getElementById('smart-search-toggle');
+
+            // 初始化阈值滑块
+            thresholdSlider.addEventListener('input', function() {
+                scoreThreshold = parseInt(this.value);
+                thresholdValue.textContent = scoreThreshold;
+                
+                // 如果有AI搜索结果，重新应用阈值过滤
+                if (currentAIMatches.length > 0) {
+                    applyThresholdFilter();
+                }
+            });
+
+            // 分页按钮事件
+            firstPageBtn.addEventListener('click', () => goToPage(1));
+            prevPageBtn.addEventListener('click', () => goToPage(currentPage - 1));
+            nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1));
+            lastPageBtn.addEventListener('click', () => goToPage(totalPages));
+            gotoBtn.addEventListener('click', () => {
+                const page = parseInt(pageInput.value);
+                if (page >= 1 && page <= totalPages) {
+                    goToPage(page);
+                }
+            });
+            pageInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    const page = parseInt(pageInput.value);
+                    if (page >= 1 && page <= totalPages) {
+                        goToPage(page);
+                    }
+                }
+            });
+
+            // 转到指定页码
+            function goToPage(page) {
+                if (page < 1) page = 1;
+                if (page > totalPages) page = totalPages;
+                
+                currentPage = page;
+                pageInput.value = page;
+                renderDatasetCards();
+                updatePaginationControls();
+            }
+
+            // 更新分页控件状态
+            function updatePaginationControls() {
+                currentPageSpan.textContent = currentPage;
+                totalPagesSpan.textContent = totalPages;
+                
+                firstPageBtn.disabled = currentPage === 1;
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages;
+                lastPageBtn.disabled = currentPage === totalPages;
+                
+                if (firstPageBtn.disabled) {
+                    firstPageBtn.classList.add('disabled');
+                } else {
+                    firstPageBtn.classList.remove('disabled');
+                }
+                
+                if (prevPageBtn.disabled) {
+                    prevPageBtn.classList.add('disabled');
+                } else {
+                    prevPageBtn.classList.remove('disabled');
+                }
+                
+                if (nextPageBtn.disabled) {
+                    nextPageBtn.classList.add('disabled');
+                } else {
+                    nextPageBtn.classList.remove('disabled');
+                }
+                
+                if (lastPageBtn.disabled) {
+                    lastPageBtn.classList.add('disabled');
+                } else {
+                    lastPageBtn.classList.remove('disabled');
+                }
+            }
+
+            // 动态生成标签数据结构
+            function generateTagsDataFromDatasets(datasets) {
+                // 初始化标签数据结构
+                const newTagsData = {};
+                const newItemTree = {};
+                
+                // 初始化所有分类
+                Object.values(categoryMapping).forEach(category => {
+                    newTagsData[category] = new Set();
+                });
+                
+                // 遍历所有数据集，收集标签信息
+                datasets.forEach(dataset => {
+                    // 处理普通分类
+                    Object.keys(categoryMapping).forEach(key => {
+                        const category = categoryMapping[key];
+                        const value = dataset[key];
+                        
+                        if (value) {
+                            if (Array.isArray(value)) {
+                                value.forEach(item => {
+                                    if (item) newTagsData[category].add(item);
+                                });
+                            } else if (typeof value === 'string' || typeof value === 'number') {
+                                newTagsData[category].add(value.toString());
+                            }
+                        }
+                    });
+                    
+                    // 特殊处理物品分类 - 构建树状结构
+                    if (dataset.item && Array.isArray(dataset.item)) {
+                        const itemHierarchy = {};
+                        let parent = null;
+                        
+                        // 提取物品的层级关系
+                        dataset.item.forEach(item => {
+                            if (!item.level) return;
+                            
+                            // 只处理非null的层级
+                            if (item.value && item.value !== 'null') {
+                                const levelNum = parseInt(item.level.replace('level', ''));
+                                itemHierarchy[levelNum] = item.value;
+                                
+                                // 构建树结构
+                                if (levelNum === 1) {
+                                    // 创建一级分类
+                                    if (!newItemTree[item.value]) {
+                                        newItemTree[item.value] = {
+                                            name: item.value,
+                                            children: {}
+                                        };
+                                    }
+                                    parent = newItemTree[item.value];
+                                } else if (levelNum === 2 && parent) {
+                                    // 创建二级分类
+                                    if (!parent.children[item.value]) {
+                                        parent.children[item.value] = {
+                                            name: item.value,
+                                            parent: parent.name
+                                        };
+                                    }
+                                }
+                                
+                                // 添加到标签数据
+                                newTagsData["物品"].add(item.value);
+                            }
+                        });
+                    }
+                });
+                
+                // 将Set转换为数组
+                Object.keys(newTagsData).forEach(category => {
+                    newTagsData[category] = Array.from(newTagsData[category]).sort();
+                });
+                
+                return {
+                    tagsData: newTagsData,
+                    itemTree: newItemTree
+                };
+            }
+            
+            // 从dataset_info文件夹加载所有数据集
+            async function loadDatasets() {
+                try {
+                    filterError.style.display = 'none';
+                    
+                    // 先读取data_index.json获取所有yml文件名
+                    const indexResponse = await fetch('dataset_info/data_index.json');
+                    if (!indexResponse.ok) {
+                        throw new Error(`无法加载data_index.json: ${indexResponse.status}`);
+                    }
+                    
+                    const fileList = await indexResponse.json();
+                    
+                    // 逐个读取yml文件
+                    let currentId = 1;
+                    datasets = [];
+                    
+                    // 创建中文到英文的属性名映射
+                    const chineseToEnglishMapping = {
+                        "任务内容": "name",
+                        "描述": "description",
+                        "场景类型": "scene",
+                        "采集本体": "robot",
+                        "末端类型": "end",
+                        "相机数量": "cameraCount",
+                        "相机类型": "cameraType",
+                        "声音传感器数量": "soundSensors",
+                        "触觉传感器数量": "tactileSensors",
+                        "原子动作": "action",
+                        "物品": "item",
+                        "桌面高度": "tableHeight",
+                        "机器人高度": "robotHeight"
+                    };
+                    
+                    for (const fileName of fileList) {
+                        try {
+                            const response = await fetch(`dataset_info/${fileName}`);
+                            if (!response.ok) {
+                                console.warn(`无法加载文件: ${fileName}`);
+                                continue;
+                            }
+                            
+                            const yamlText = await response.text();
+                            const dataset = jsyaml.load(yamlText);
+                            
+                            debugger;
+
+                            // 转换中文属性名为英文属性名
+                            const englishDataset = {};
+                            for (const [chineseKey, value] of Object.entries(dataset)) {
+                                const englishKey = chineseToEnglishMapping[chineseKey] || chineseKey;
+                                englishDataset[englishKey] = value;
+                            }
+                            
+                            debugger;
+
+                            // 转换特定字段为数组格式
+                            const arrayFields = ['scene', 'robot', 'end', 'cameraType', 'action'];
+                            arrayFields.forEach(field => {
+                                if (englishDataset[field] && !Array.isArray(englishDataset[field])) {
+                                    englishDataset[field] = [englishDataset[field]];
+                                }
+                            });
+                            
+                            // 特殊处理物品字段
+                            if (englishDataset.item) {
+                                const itemArray = [];
+                                // 处理层级结构
+                                for (let i = 1; i <= 5; i++) {
+                                    const levelKey = `level${i}`;
+                                    if (englishDataset.item[levelKey] && englishDataset.item[levelKey] !== 'null') {
+                                        itemArray.push({
+                                            level: levelKey,
+                                            value: englishDataset.item[levelKey]
+                                        });
+                                    }
+                                }
+                                englishDataset.item = itemArray;
+                            }
+                            
+                            // 添加ID
+                            englishDataset.id = currentId.toString();
+                            currentId++;
+                            
+                            datasets.push(englishDataset);
+                        } catch (error) {
+                            console.warn(`解析文件失败: ${fileName}`, error);
+                        }
+                    }
+                    
+                    if (datasets.length === 0) {
+                        throw new Error('没有成功加载任何数据集文件');
+                    }
+                    
+                    // 动态生成标签数据
+                    const { tagsData: generatedTagsData, itemTree } = generateTagsDataFromDatasets(datasets);
+                    tagsData = generatedTagsData;
+                    itemCategoryTree = itemTree;
+                    
+                    currentDatasets = datasets;
+                    totalPages = Math.ceil(currentDatasets.length / itemsPerPage);
+                    updateStats();
+                    
+                    return datasets;
+                } catch (error) {
+                    console.error('加载数据集失败:', error);
+                    filterError.textContent = `加载数据集失败: ${error.message}`;
+                    filterError.style.display = 'block';
+                    throw error;
+                }
+            }
+
+            
+            // 更新统计数据
+            function updateStats() {
+                if (datasets.length === 0) return;
+                
+                // 计算总样本数
+                let totalSamples = 0;
+                datasets.forEach(ds => {
+                    const samples = ds.name.match(/[\d,]+/);
+                    if (samples) {
+                        totalSamples += parseInt(samples[0].replace(/,/g, ''));
+                    } else {
+                        // 为每个数据集添加随机样本数
+                        totalSamples += Math.floor(Math.random() * 10000) + 2000;
+                    }
+                });
+                statSamples.textContent = totalSamples > 1000 ? 
+                    `${Math.round(totalSamples/1000)}K+` : 
+                    `${totalSamples}`;
+                
+                // 计算物品类别（去重）
+                const allItems = new Set();
+                datasets.forEach(ds => {
+                    if (ds.item) {
+                        ds.item.forEach(item => allItems.add(item.value));
+                    }
+                });
+                statItems.textContent = allItems.size;
+                
+                // 计算原子动作（去重）
+                const allActions = new Set();
+                datasets.forEach(ds => {
+                    if (ds.action) {
+                        ds.action.forEach(action => allActions.add(action));
+                    }
+                });
+                statActions.textContent = allActions.size;
+                
+                // 计算机器人本体（去重）
+                const allRobots = new Set();
+                datasets.forEach(ds => {
+                    if (ds.robot) {
+                        ds.robot.forEach(robot => allRobots.add(robot));
+                    }
+                });
+                statRobots.textContent = allRobots.size;
+            }
+
+            // 初始化activeFilters结构
+            function initActiveFilters(tagsData) {
+                Object.keys(tagsData).forEach(category => {
+                    activeFilters[category] = [];
+                });
+            }
+
+            // 渲染筛选区域
+            function renderFilterSections(tagsData) {
+                filterSectionsContainer.innerHTML = '';
+                
+                Object.keys(tagsData).forEach(category => {
+                    const section = document.createElement('div');
+                    section.className = 'filter-section';
+                    
+                    // 获取类别图标
+                    const icon = getCategoryIcon(category);
+                    
+                    const header = document.createElement('div');
+                    header.className = 'filter-header';
+                    
+                    // 添加展开/折叠图标
+                    const expandIcon = document.createElement('i');
+                    expandIcon.className = 'fas fa-chevron-right expand-icon';
+                    
+                    header.innerHTML = `<i class="${icon}"></i> ${category}`;
+                    header.appendChild(expandIcon);
+                    
+                    const tagContainer = document.createElement('div');
+                    tagContainer.className = 'tag-container';
+                    
+                    if (category === "物品") {
+                        // 特殊处理物品类别（树状结构）
+                        Object.keys(itemCategoryTree).forEach(parentItem => {
+                            const parentNode = itemCategoryTree[parentItem];
+                            
+                            const parentButton = document.createElement('button');
+                            parentButton.className = 'tag-btn';
+                            parentButton.dataset.category = category;
+                            parentButton.dataset.value = parentNode.name;
+                            parentButton.innerHTML = `${parentNode.name} <span class="tag-count">${Object.keys(parentNode.children).length}</span>`;
+                            tagContainer.appendChild(parentButton);
+                            
+                            // 创建子标签容器
+                            const subContainer = document.createElement('div');
+                            subContainer.className = 'sub-tag-container';
+                            
+                            Object.keys(parentNode.children).forEach(childItem => {
+                                const childNode = parentNode.children[childItem];
+                                
+                                const childButton = document.createElement('button');
+                                childButton.className = 'tag-btn';
+                                childButton.dataset.category = category;
+                                childButton.dataset.value = childNode.name;
+                                childButton.innerHTML = `${childNode.name}`;
+                                subContainer.appendChild(childButton);
+                            });
+                            
+                            tagContainer.appendChild(subContainer);
+                            
+                            // 添加展开/折叠功能
+                            header.addEventListener('click', function() {
+                                const isExpanded = subContainer.classList.contains('show');
+                                if (isExpanded) {
+                                    subContainer.classList.remove('show');
+                                    expandIcon.classList.remove('expanded');
+                                } else {
+                                    subContainer.classList.add('show');
+                                    expandIcon.classList.add('expanded');
+                                }
+                            });
+                        });
+                    } else {
+                        // 其他类别（平铺结构）
+                        const items = Array.isArray(tagsData[category]) ? tagsData[category] : [];
+                        
+                        items.forEach(item => {
+                            const button = document.createElement('button');
+                            button.className = 'tag-btn';
+                            button.dataset.category = category;
+                            button.dataset.value = item;
+                            
+                            button.innerHTML = `${item}`;
+                            tagContainer.appendChild(button);
+                        });
+                    }
+                    
+                    section.appendChild(header);
+                    section.appendChild(tagContainer);
+                    filterSectionsContainer.appendChild(section);
+                });
+                
+                filterLoading.style.display = 'none';
+                bindTagButtonEvents();
+            }
+
+            // 获取类别的图标
+            function getCategoryIcon(category) {
+                const icons = {
+                    "场景类型": "fas fa-map-marker-alt",
+                    "采集本体": "fas fa-robot",
+                    "末端类型": "fas fa-hand-paper",
+                    "相机数量": "fas fa-camera",
+                    "相机类型": "fas fa-video",
+                    "声音传感器数量": "fas fa-microphone",
+                    "触觉传感器数量": "fas fa-hand-holding",
+                    "原子动作": "fas fa-hand-rock",
+                    "物品": "fas fa-cube",
+                    "桌面高度": "fas fa-ruler-vertical",
+                    "机器人高度": "fas fa-ruler-combined"
+                };
+                
+                return icons[category] || "fas fa-tag";
+            }
+
+            // 渲染数据集卡片
+            function renderDatasetCards() {
+                datasetContainer.innerHTML = '';
+                
+                if (currentDatasets.length === 0) {
+                    const noResults = document.createElement('div');
+                    noResults.className = 'no-results';
+                    noResults.innerHTML = `
+                        <i class="fas fa-search"></i>
+                        <h3>没有找到匹配的数据集</h3>
+                        <p>请尝试调整筛选条件或重置筛选</p>
+                    `;
+                    datasetContainer.appendChild(noResults);
+                    return;
+                }
+                
+                // 计算当前页的数据集
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, currentDatasets.length);
+                const pageDatasets = currentDatasets.slice(startIndex, endIndex);
+                
+                pageDatasets.forEach(dataset => {
+                    const card = document.createElement('div');
+                    card.className = 'dataset-card';
+                    card.dataset.id = dataset.id;
+                    
+                    // 检查是否为AI匹配结果
+                    const aiMatch = currentAIMatches.find(match => match.id === dataset.id);
+                    
+                    // 添加数据集属性
+                    card.dataset.scene = dataset.scene ? dataset.scene.join(',') : '';
+                    card.dataset.robot = dataset.robot ? dataset.robot.join(',') : '';
+                    card.dataset.end = dataset.end ? dataset.end.join(',') : '';
+                    card.dataset.cameraType = dataset.cameraType ? dataset.cameraType.join(',') : '';
+                    card.dataset.action = dataset.action ? dataset.action.join(',') : '';
+                    
+                    // 处理物品属性
+                    const itemValues = dataset.item ? dataset.item.map(item => item.value) : [];
+                    card.dataset.item = itemValues.join(',');
+                    
+                    // 创建属性标签组
+                    const sceneTags = dataset.scene ? 
+                        dataset.scene.map(s => `<span class="tag">${s}</span>`).join('') : '';
+                    const robotTags = dataset.robot ? 
+                        dataset.robot.map(r => `<span class="tag">${r}</span>`).join('') : '';
+                    const endTags = dataset.end ? 
+                        dataset.end.map(e => `<span class="tag">${e}</span>`).join('') : '';
+                    const cameraTags = dataset.cameraType ? 
+                        dataset.cameraType.map(c => `<span class="tag">${c}</span>`).join('') : '';
+                    const actionTags = dataset.action ? 
+                        dataset.action.map(a => `<span class="tag">${a}</span>`).join('') : '';
+                    const itemTags = dataset.item ? 
+                        dataset.item.map(i => `<span class="tag">${i.value}</span>`).join('') : '';
+                    
+                    // 如果有AI匹配结果，添加特殊标记
+                    let aiBadge = '';
+                    if (aiMatch) {
+                        card.classList.add('highlighted-card');
+                        aiBadge = `
+                            <div class="ai-result-badge">
+                                <i class="fas fa-brain"></i> AI匹配
+                                <span class="ai-score">${aiMatch.score}分</span>
+                            </div>
+                        `;
+                        // 添加匹配原因提示
+                        card.title = `匹配原因: ${aiMatch.reason}\n匹配分数: ${aiMatch.score}/100`;
+                    }
+                    
+                    card.innerHTML = `
+                        ${aiBadge}
+                        <div class="card-header">
+                            <h3>${dataset.name}</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>${dataset.description}</p>
+                            <div class="tags">
+                                ${sceneTags ? `<div><strong>场景: </strong>${sceneTags}</div>` : ''}
+                                ${robotTags ? `<div><strong>机器人: </strong>${robotTags}</div>` : ''}
+                                ${endTags ? `<div><strong>末端: </strong>${endTags}</div>` : ''}
+                                ${cameraTags ? `<div><strong>相机: </strong>${cameraTags}</div>` : ''}
+                                ${actionTags ? `<div><strong>动作: </strong>${actionTags}</div>` : ''}
+                                ${itemTags ? `<div><strong>物品: </strong>${itemTags}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="download-btn"><i class="fas fa-download"></i> 下载</button>
+                        </div>
+                    `;
+                    
+                    datasetContainer.appendChild(card);
+                });
+                
+                bindCardEvents();
+            }
+
+            // 绑定标签按钮事件
+            function bindTagButtonEvents() {
+                const tagBtns = document.querySelectorAll('.tag-btn');
+                
+                tagBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const category = this.dataset.category;
+                        const value = this.dataset.value;
+                        
+                        if (this.classList.contains('active')) {
+                            this.classList.remove('active');
+                            const index = activeFilters[category].indexOf(value);
+                            if (index > -1) {
+                                activeFilters[category].splice(index, 1);
+                            }
+                        } else {
+                            this.classList.add('active');
+                            if (!activeFilters[category].includes(value)) {
+                                activeFilters[category].push(value);
+                            }
+                        }
+                        
+                        updateSelectedTags();
+                        // 自动应用筛选
+                        autoApplyFilters();
+                    });
+                });
+            }
+
+            // 绑定卡片事件
+            function bindCardEvents() {
+                const cards = document.querySelectorAll('.dataset-card');
+                cards.forEach(card => {
+                    card.addEventListener('mouseenter', function() {
+                        this.style.transform = 'translateY(-8px)';
+                    });
+                    
+                    card.addEventListener('mouseleave', function() {
+                        this.style.transform = 'translateY(0)';
+                    });
+                    
+                    const downloadBtn = card.querySelector('.download-btn');
+                    downloadBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const datasetName = card.querySelector('.card-header h3').textContent;
+                        alert(`开始下载数据集: ${datasetName}`);
+                    });
+                });
+            }
+
+            // 更新选中的标签显示
+            function updateSelectedTags() {
+                selectedTagsContainer.innerHTML = '';
+                
+                Object.keys(activeFilters).forEach(category => {
+                    activeFilters[category].forEach(value => {
+                        const tagElement = document.createElement('div');
+                        tagElement.className = 'selected-tag';
+                        tagElement.innerHTML = `${category}: ${value} <i class="fas fa-times" data-category="${category}" data-value="${value}"></i>`;
+                        selectedTagsContainer.appendChild(tagElement);
+                    });
+                });
+                
+                document.querySelectorAll('.selected-tag i').forEach(icon => {
+                    icon.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const category = this.dataset.category;
+                        const value = this.dataset.value;
+                        
+                        const index = activeFilters[category].indexOf(value);
+                        if (index > -1) {
+                            activeFilters[category].splice(index, 1);
+                        }
+                        
+                        document.querySelectorAll(`.tag-btn[data-category="${category}"][data-value="${value}"]`).forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        
+                        updateSelectedTags();
+                        // 自动应用筛选
+                        autoApplyFilters();
+                    });
+                });
+            }
+
+            // 重置筛选条件
+            resetBtn.addEventListener('click', function() {
+                Object.keys(activeFilters).forEach(category => {
+                    activeFilters[category] = [];
+                });
+                
+                document.querySelectorAll('.tag-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                selectedTagsContainer.innerHTML = '';
+                searchInput.value = '';
+                apiMockResult.style.display = 'none';
+                apiResponse.style.display = 'none';
+                
+                // 重置当前数据集
+                currentDatasets = datasets;
+                totalPages = Math.ceil(currentDatasets.length / itemsPerPage);
+                currentPage = 1;
+                renderDatasetCards();
+                updatePaginationControls();
+                
+                // 重置AI匹配结果
+                currentAIMatches = [];
+            });
+            
+            // 切换筛选模式
+            modeAllBtn.addEventListener('click', function() {
+                filterMode = true;
+                modeAllBtn.classList.add('active');
+                modeAnyBtn.classList.remove('active');
+                autoApplyFilters();
+            });
+            
+            modeAnyBtn.addEventListener('click', function() {
+                filterMode = false;
+                modeAnyBtn.classList.add('active');
+                modeAllBtn.classList.remove('active');
+                autoApplyFilters();
+            });
+            
+            // 自动应用筛选功能（带防抖）
+            function autoApplyFilters() {
+                // 清除之前的计时器
+                if (filterDebounceTimer) {
+                    clearTimeout(filterDebounceTimer);
+                }
+                
+                // 设置防抖计时器
+                filterDebounceTimer = setTimeout(() => {
+                    applyFilters();
+                    filterDebounceTimer = null;
+                }, 300); // 300毫秒防抖延迟
+            }
+            
+            // 执行筛选功能
+            function applyFilters() {
+                // 重置AI匹配结果
+                currentAIMatches = [];
+                
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                
+                // 创建临时筛选条件对象
+                const tempActiveFilters = JSON.parse(JSON.stringify(activeFilters));
+                
+                // 特殊处理物品类别
+                if (tempActiveFilters["物品"] && tempActiveFilters["物品"].length > 0) {
+                    // 找出所有被选中的大类
+                    const selectedParentItems = [];
+                    tempActiveFilters["物品"].forEach(item => {
+                        if (itemCategoryTree[item]) {
+                            selectedParentItems.push(item);
+                        }
+                    });
+                    
+                    // 对于每个被选中的大类，检查是否选择了其子类
+                    selectedParentItems.forEach(parentItem => {
+                        const parentNode = itemCategoryTree[parentItem];
+                        const hasChildSelected = tempActiveFilters["物品"].some(item => 
+                            parentNode.children[item]
+                        );
+                        
+                        // 如果没有选择任何子类，则添加所有子类
+                        if (!hasChildSelected) {
+                            Object.keys(parentNode.children).forEach(childItem => {
+                                if (!tempActiveFilters["物品"].includes(childItem)) {
+                                    tempActiveFilters["物品"].push(childItem);
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                // 筛选数据集
+                currentDatasets = datasets.filter(dataset => {
+                    let shouldShow = true;
+                    
+                    // 检查每个类别（不同类型之间为AND关系）
+                    Object.keys(tempActiveFilters).forEach(category => {
+                        if (tempActiveFilters[category].length > 0) {
+                            // 获取该分类对应的数据集属性名
+                            const datasetKey = Object.keys(categoryMapping).find(
+                                key => categoryMapping[key] === category
+                            );
+                            
+                            if (!datasetKey) return;
+                            
+                            let datasetValues = [];
+                            
+                            if (datasetKey === 'item') {
+                                // 特殊处理物品属性
+                                datasetValues = dataset.item ? dataset.item.map(item => item.value) : [];
+                            } else {
+                                datasetValues = dataset[datasetKey] || [];
+                                // 确保是数组
+                                if (!Array.isArray(datasetValues)) {
+                                    datasetValues = [datasetValues];
+                                }
+                            }
+                            
+                            // 转换为字符串数组
+                            datasetValues = datasetValues.map(v => v.toString());
+                            
+                            let categoryMatches = false;
+                            
+                            if (filterMode) {
+                                categoryMatches = tempActiveFilters[category].every(value => 
+                                    datasetValues.includes(value.toString())
+                                );
+                            } else {
+                                categoryMatches = tempActiveFilters[category].some(value => 
+                                    datasetValues.includes(value.toString())
+                                );
+                            }
+                            
+                            if (!categoryMatches) {
+                                shouldShow = false;
+                            }
+                        }
+                    });
+                    
+                    // 检查搜索条件
+                    if (shouldShow && searchTerm) {
+                        const datasetText = (
+                            dataset.name + " " + 
+                            (dataset.description || "") + " " + 
+                            (dataset.scene ? dataset.scene.join(" ") : "") + " " +
+                            (dataset.robot ? dataset.robot.join(" ") : "") + " " +
+                            (dataset.end ? dataset.end.join(" ") : "") + " " +
+                            (dataset.cameraType ? dataset.cameraType.join(" ") : "") + " " +
+                            (dataset.action ? dataset.action.join(" ") : "") + " " +
+                            (dataset.item ? dataset.item.map(item => item.value).join(" ") : "")
+                        ).toLowerCase();
+                        
+                        if (!datasetText.includes(searchTerm)) {
+                            shouldShow = false;
+                        }
+                    }
+                    
+                    return shouldShow;
+                });
+                
+                // 更新分页信息
+                totalPages = Math.ceil(currentDatasets.length / itemsPerPage);
+                currentPage = 1; // 重置到第一页
+                pageInput.value = 1;
+                
+                // 渲染数据集
+                renderDatasetCards();
+                updatePaginationControls();
+                
+                // 更新筛选状态指示器
+                statusIndicator.innerHTML = '<i class="fas fa-check-circle"></i> <span>本地筛选模式已启用</span>';
+            }
+            
+            // 初始化页面
+            async function initPage() {
+                try {
+                    // 显示加载状态
+                    filterLoading.style.display = 'block';
+                    
+                    // 加载数据集
+                    await loadDatasets();
+                    
+                    // 初始化筛选器
+                    initActiveFilters(tagsData);
+                    // 渲染筛选区域
+                    renderFilterSections(tagsData);
+                    // 渲染数据集卡片
+                    renderDatasetCards();
+                    // 更新分页控件
+                    updatePaginationControls();
+                    
+                    // 显示API配置成功信息
+                    apiConfigSuccess.style.display = 'flex';
+                    
+                    // 添加智能搜索开关状态变化监听
+                    smartSearchToggle.addEventListener('change', function() {
+                        if (this.checked) {
+                            statusIndicator.innerHTML = '<i class="fas fa-check-circle"></i> <span>智能搜索模式已启用</span>';
+                        } else {
+                            statusIndicator.innerHTML = '<i class="fas fa-check-circle"></i> <span>本地搜索模式已启用</span>';
+                        }
+                    });
+                } catch (error) {
+                    console.error('页面初始化失败:', error);
+                    filterError.textContent = `页面初始化失败: ${error.message}`;
+                    filterError.style.display = 'block';
+                    filterLoading.style.display = 'none';
+                }
+            }
+            
+            // 启动页面初始化
+            initPage();
+        });
+    </script>
+</body>
+</html>
