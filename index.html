@@ -2009,6 +2009,15 @@
 
                             debugger;
 
+                            const stringFields = ['cameraCount', 'soundSensors', 'tactileSensors'];
+                            stringFields.forEach(field => {
+                                if (englishDataset[field] !== undefined) {
+                                    englishDataset[field] = englishDataset[field].toString();
+                                }
+                            });
+
+
+
                             // 转换特定字段为数组格式
                             const arrayFields = ['scene', 'robot', 'end', 'cameraType', 'action'];
                             arrayFields.forEach(field => {
