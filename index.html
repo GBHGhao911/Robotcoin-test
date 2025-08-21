@@ -2244,6 +2244,241 @@
                 statusIndicator.innerHTML = '<i class="fas fa-check-circle"></i> <span>本地筛选模式已启用</span>';
             }
             
+
+            async function searchWithDeepSeek() {
+                const searchTerm = searchInput.value.trim();
+                if (!searchTerm) {
+                    // 如果搜索词为空，恢复显示所有数据集
+                    currentDatasets = datasets;
+                    totalPages = Math.ceil(currentDatasets.length / itemsPerPage);
+                    currentPage = 1;
+                    renderDatasetCards();
+                    updatePaginationControls();
+                    apiMockResult.style.display = 'none';
+                    apiResponse.style.display = 'none';
+                    return;
+                }
+                
+                // 显示加载状态
+                statusIndicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> <span>正在使用DeepSeek智能搜索...</span>';
+                
+                try {
+                    // 获取当前筛选后的数据集
+                    const filteredDatasets = getFilteredDatasets();
+                    
+                    // 如果没有数据集被筛选出来，提示用户
+                    if (filteredDatasets.length === 0) {
+                        throw new Error('没有数据集符合当前筛选条件，请调整筛选条件后再试。');
+                    }
+                    
+                    // 准备发送到DeepSeek API的数据
+                    const payload = {
+                        model: "deepseek-chat",
+                        messages: [
+                            {
+                                role: "system",
+                                content: "你是一个机器人数据集专家，帮助用户从筛选后的数据集中找到最匹配用户查询的数据集。请为每个匹配的数据集提供0-100的匹配分数，分数越高表示相关性越强。返回JSON格式，包含'matches'数组，每个元素包含'id'、'name'、'reason'和'score'字段。"
+                            },
+                            {
+                                role: "user",
+                                content: `用户搜索查询: "${searchTerm}"\n\n筛选后的数据集信息:\n${JSON.stringify(filteredDatasets, null, 2)}\n\n请为每个数据集评估匹配分数（0-100），并返回JSON格式的匹配结果。`
+                            }
+                        ],
+                        temperature: 0.3,
+                        max_tokens: 2000
+                    };
+                    
+                    // 显示API请求内容
+                    apiRequest.textContent = JSON.stringify(payload, null, 2);
+                    apiMockResult.style.display = 'block';
+                    apiResponse.style.display = 'none';
+                    
+                    
+                    // 使用本地代理服务器解决CORS问题
+                    const proxyUrl = 'https://corsproxy.io/?url=';
+                    const targetUrl = apiConfig.endpoint;
+                    const fullUrl = proxyUrl + encodeURIComponent(targetUrl);
+                    //const fullUrl = encodeURIComponent(targetUrl);
+                    
+
+                    //const fullUrl = "https://deepseek-proxy-sigma.vercel.app/api/proxy";
+
+                    // 实际调用DeepSeek API
+                    const response = await fetch(fullUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiConfig.apiKey}`,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`API错误: ${response.status} - ${errorText}`);
+                    }
+                    
+                    const result = await response.json();   
+                        
+                    // 显示API响应
+                    apiResponseContent.textContent = JSON.stringify(result, null, 2);
+                    apiResponse.style.display = 'block';
+                        
+                        // 解析API响应
+                    if (result.choices && result.choices.length > 0) {
+                        const aiResponse = result.choices[0].message.content;
+                        // 提取匹配的数据集ID和分数
+                        const matches = extractMatchesFromAIResponse(aiResponse, filteredDatasets);
+                            
+                        // 保存匹配结果
+                        currentAIMatches = matches;
+                            
+                        // 应用阈值过滤并显示结果
+                        applyThresholdFilter();
+                            
+                        // 更新筛选指示器
+                        statusIndicator.innerHTML = `<i class="fas fa-check-circle"></i> <span>DeepSeek找到 ${matches.filter(m => m.score >= scoreThreshold).length} 个相关数据集</span>`;
+                    } else {
+                        throw new Error('API响应中没有找到有效的结果');
+                    }
+                    
+                } catch (error) {
+                    console.error('DeepSeek搜索失败:', error);
+                    statusIndicator.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>${error.message || '智能搜索失败，使用本地搜索'}</span>`;
+                    
+                    // 回退到本地搜索
+                    applyFilters();
+                }
+            }
+            
+            // 应用阈值过滤
+            function applyThresholdFilter() {
+                const filteredMatches = currentAIMatches.filter(match => match.score >= scoreThreshold);
+                displayDeepSeekResults(filteredMatches);
+            }
+            
+            // 从AI响应中提取匹配的数据集和分数
+            function extractMatchesFromAIResponse(aiResponse, datasets) {
+                const matches = [];
+                
+                // 尝试从AI响应中解析JSON
+                try {
+                    const jsonStart = aiResponse.indexOf('{');
+                    const jsonEnd = aiResponse.lastIndexOf('}') + 1;
+                    const jsonStr = aiResponse.substring(jsonStart, jsonEnd);
+                    
+                    const parsed = JSON.parse(jsonStr);
+                    if (parsed.matches && Array.isArray(parsed.matches)) {
+                        return parsed.matches.map(match => {
+                            // 确保有分数值，如果没有则生成随机分数
+                            if (match.score === undefined) {
+                                match.score = Math.floor(Math.random() * 41) + 60; // 60-100之间的随机分数
+                            }
+                            return match;
+                        });
+                    }
+                } catch (e) {
+                    console.log('无法解析AI响应为JSON，使用启发式方法');
+                }
+                
+                // 启发式方法：在AI响应中查找数据集名称
+                datasets.forEach(dataset => {
+                    if (aiResponse.includes(dataset.name)) {
+                        matches.push({
+                            id: dataset.id,
+                            name: dataset.name,
+                            reason: "在AI响应中匹配到数据集名称",
+                            score: Math.floor(Math.random() * 41) + 60 // 60-100之间的随机分数
+                        });
+                    }
+                });
+                
+                return matches;
+            }
+            
+            // 获取当前筛选后的数据集
+            function getFilteredDatasets() {
+                return datasets.filter(dataset => {
+                    // 复制applyFilters中的筛选逻辑
+                    let shouldInclude = true;
+                    
+                    Object.keys(activeFilters).forEach(category => {
+                        if (activeFilters[category].length > 0) {
+                            const datasetKey = Object.keys(categoryMapping).find(
+                                key => categoryMapping[key] === category
+                            );
+                            
+                            if (!datasetKey) return;
+                            
+                            const cardValues = (dataset[datasetKey] || []).map(v => v.toString());
+                            let categoryMatches = false;
+                            
+                            if (filterMode) {
+                                categoryMatches = activeFilters[category].every(value => 
+                                    cardValues.includes(value.toString())
+                                );
+                            } else {
+                                categoryMatches = activeFilters[category].some(value => 
+                                    cardValues.includes(value.toString())
+                                );
+                            }
+                            
+                            if (!categoryMatches) {
+                                shouldInclude = false;
+                            }
+                        }
+                    });
+                    
+                    return shouldInclude;
+                });
+            }
+            
+            // 显示DeepSeek API返回的结果（带匹配分数）
+            function displayDeepSeekResults(matches) {
+                // 更新当前数据集为匹配结果
+                currentDatasets = matches.map(match => {
+                    return datasets.find(ds => ds.id === match.id);
+                }).filter(ds => ds != null);
+                
+                // 更新分页信息
+                totalPages = Math.ceil(currentDatasets.length / itemsPerPage);
+                currentPage = 1;
+                pageInput.value = 1;
+                
+                // 渲染数据集
+                renderDatasetCards();
+                updatePaginationControls();
+            }
+
+
+
+            // 搜索事件监听器
+            searchBtn.addEventListener('click', function() {
+                // 检查智能搜索开关状态
+                if (smartSearchToggle.checked) {
+                    // 启用智能搜索
+                    searchWithDeepSeek();
+                } else {
+                    // 使用普通搜索
+                    applyFilters();
+                }
+            });
+            
+            searchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    // 检查智能搜索开关状态
+                    if (smartSearchToggle.checked) {
+                        // 启用智能搜索
+                        searchWithDeepSeek();
+                    } else {
+                        // 使用普通搜索
+                        applyFilters();
+                    }
+                }
+            });
+
+
             // 初始化页面
             async function initPage() {
                 try {
