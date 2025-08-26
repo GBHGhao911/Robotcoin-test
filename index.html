@@ -2653,52 +2653,34 @@
                         throw new Error('没有数据集符合当前筛选条件，请调整筛选条件后再试。');
                     }
                     
-                    // 准备发送到DeepSeek API的数据
-                    const payload = {
-                        model: "deepseek-chat",
-                        messages: [
-                            {
-                                role: "system",
-                                content: "你是一个机器人数据集专家，帮助用户从筛选后的数据集中找到最匹配用户查询的数据集。请为每个匹配的数据集提供0-100的匹配分数，分数越高表示相关性越强。返回JSON格式，包含'matches'数组，每个元素包含'id'、'name'、'reason'和'score'字段。"
-                            },
-                            {
-                                role: "user",
-                                content: `用户搜索查询: "${searchTerm}"\n\n筛选后的数据集信息:\n${JSON.stringify(filteredDatasets, null, 2)}\n\n请为每个数据集评估匹配分数（0-100），并返回JSON格式的匹配结果。`
-                            }
-                        ],
-                        temperature: 0.3,
-                        max_tokens: 2000
+                    // 准备发送到代理服务器的数据
+                    const requestData = {
+                        searchTerm: searchTerm,
+                        filteredDatasets: filteredDatasets
                     };
                     
-                    // 显示API请求内容
-                    apiRequest.textContent = JSON.stringify(payload, null, 2);
+                    // 显示API请求内容（注意：不包含API密钥）
+                    apiRequest.textContent = JSON.stringify(requestData, null, 2);
                     apiMockResult.style.display = 'block';
                     apiResponse.style.display = 'none';
                     
+                    // 使用Vercel部署的代理服务器
+                    const proxyUrl = 'https://deepseek-proxy-sigma.vercel.app/api/proxy.js';
+                    // 请将上面的URL替换为你实际的Vercel项目地址
                     
-                    // 使用本地代理服务器解决CORS问题
-                    const proxyUrl = 'https://corsproxy.io/?url=';
-                    const targetUrl = apiConfig.endpoint;
-                    const fullUrl = proxyUrl + encodeURIComponent(targetUrl);
-                    //const fullUrl = encodeURIComponent(targetUrl);
-                    
-
-                    //const fullUrl = "https://deepseek-proxy-sigma.vercel.app/api/proxy";
-
-                    // 实际调用DeepSeek API
-                    const response = await fetch(fullUrl, {
+                    // 调用代理API
+                    const response = await fetch(proxyUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiConfig.apiKey}`,
                             'X-Requested-With': 'XMLHttpRequest'
                         },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(requestData)
                     });
                     
                     if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`API错误: ${response.status} - ${errorText}`);
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(`API错误: ${response.status} - ${errorData.error || await response.text()}`);
                     }
                     
                     const result = await response.json();   
@@ -2707,7 +2689,7 @@
                     apiResponseContent.textContent = JSON.stringify(result, null, 2);
                     apiResponse.style.display = 'block';
                         
-                        // 解析API响应
+                    // 解析API响应
                     if (result.choices && result.choices.length > 0) {
                         const aiResponse = result.choices[0].message.content;
                         // 提取匹配的数据集ID和分数
@@ -2733,6 +2715,7 @@
                     applyFilters();
                 }
             }
+
             
             // 应用阈值过滤
             function applyThresholdFilter() {
